@@ -1,72 +1,43 @@
+""" Класс для скачивания и перевода в нужный формат данных из ЦБ """
+
 import requests
-from xml.etree import ElementTree as ET
 
 def get_currencies(currencies_ids_lst: list) -> list:
-      # TODO 1: Исследовать самостоятельно есть ли более оптимальная библиотека для парсинга XML или
+    """ Функция загрузки данных с ЦБ и приведения их в формат словаря из json"""
 
-    # посмотреть есть ли возможность использовать у ЦБ другой API для получения json изначально
 
-    cur_res_str = requests.get('https://www.cbr.ru/scripts/XML_daily.asp')
+    """TODO 1(ответ): Вместо XML и перевода с помощью библиотек в json формат, используется !неофициальное!
+    "зеркало" ЦБ, по ссылке которого через requests и .json() получается словарь данных о валютах и курсах.
+    Официального JSON API у ЦБ нет.
+    
+    зеркало с JSON - https://www.cbr-xml-daily.ru/daily_json.js
+    изначальная ссылка: https://www.cbr.ru/scripts/XML_daily.asp """
+
+    url = 'https://www.cbr-xml-daily.ru/daily_json.js'
+    response = requests.get(url, timeout=10)
+    # timeout = гарантия либо ответа сайта,
+    # либо продолжения программы без зависания на ожидании
+    response.raise_for_status() # Проверка, что сайт не упал и ответил программе
+
+    data = response.json()
     result = []
-
-    root = ET.fromstring(cur_res_str.content)
-    valutes = root.findall(
-        "Valute"
-    )  # исследовать, есть ли отдельный метод получения валют с опреденным id
-    # если да, упростить алгоритм ниже
-    for _v in valutes:
-        valute_id = _v.get('ID')
-        valute = {}
-        if (str(valute_id) in currencies_ids_lst):
-            valute_cur_name, valute_cur_val = _v.find('Name').text, _v.find(
-                'Value').text
-            valute_charcode = _v.find('CharCode').text
-            valute[valute_charcode] = (valute_cur_name, valute_cur_val)
-            result.append(valute)
+    # vvvv Формат изначальных данных vvvv
+    # 'Valute': {'AUD': {'AUD': {'ID': 'R01010', 'NumCode': '036', ...
+    # ... 'CharCode': 'AUD', 'Nominal': 1, 'Name': 'Австралийский доллар',
+    # 'Value': 57.1567, 'Previous': 57.0503}, '':{}, '':{} ...  }
+    valutes = data['Valute']
+    for char_code, info in valutes.items():
+        valute_id = info.get('ID')
+        if valute_id in currencies_ids_lst:
+            name = info.get('Name')
+            value = info.get('Value')
+            currency = {char_code: (name, str(value).replace('.', ','))}
+            result.append(currency)
 
     return result
 
-
-class CurrenciesLst():
-
-    def __init__(self):
-        self.__cur_lst = [{
-            'GBP': ('Фунт стерлингов Соединенного королевства', '113,2069')
-        }, {
-            'KZT': ('Казахстанских тенге', '19,8264')
-        }, {
-            'TRY': ('Турецких лир', '33,1224')
-        }]
-
-    def visualize_currencies(self):
-        import matplotlib.pyplot as plt
-
-        fig, ax = plt.subplots()
-        currencies = []
-        for el in self.__cur_lst:
-            currencies.append(str(el.keys()))
-
-        print(currencies)
-        # fruits = ['apple', 'blueberry', 'cherry', 'orange']
-        # counts = [40, 100, 30, 55]
-        # bar_labels = ['red', 'blue', '_red', 'orange']
-        # bar_colors = ['tab:red', 'tab:blue', 'tab:red', 'tab:orange']
-
-        # ax.bar(fruits, counts, label=bar_labels, color=bar_colors)
-
-        # ax.set_ylabel('fruit supply')
-        # ax.set_title('Fruit supply by kind and color')
-        # ax.legend(title='Fruit color')
-
-        # plt.show()
-
-        # обращается к атрибуту __cur_lst, преобразовывать значения курсов валют в нужный формат и выводить эти данные в файл
-
-        # self.__cur_lst
-
-
 if __name__ == '__main__':
-
+    # фунты стерлингов, тенге, турецкие лиры
     res = get_currencies(['R01035', 'R01335', 'R01700J'])
     if res:
         print(get_currencies(['R01035', 'R01335', 'R01700J']))
