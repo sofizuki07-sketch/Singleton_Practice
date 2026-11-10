@@ -1,6 +1,6 @@
 """ Класс для скачивания и перевода в нужный формат данных из ЦБ """
-
 import requests
+from decimal import Decimal
 
 class CbrClient:
 
@@ -51,8 +51,11 @@ class CbrClient:
             valute_id = info.get('ID')
             if valute_id in self.cur_lst:
                 name = info.get('Name')
-                value = info.get('Value')
-                currency = {char_code: (name, str(value).replace('.', ','))}
+
+                value_decimal = Decimal(str(info.get('Value')))
+                value_str = f"{value_decimal:.4f}"
+                value = value_str.split(".")
+                currency = {char_code: (name, tuple(value) ) }
                 result.append(currency)
 
         return result
