@@ -47,15 +47,22 @@ class CbrClient:
         # ... 'CharCode': 'AUD', 'Nominal': 1, 'Name': 'Австралийский доллар',
         # 'Value': 57.1567, 'Previous': 57.0503}, '':{}, '':{} ...  }
         valutes = data['Valute']
+        print(valutes)
         for char_code, info in valutes.items():
             valute_id = info.get('ID')
             if valute_id in self.cur_lst:
                 name = info.get('Name')
+                nominal = info.get('Nominal')
 
                 value_decimal = Decimal(str(info.get('Value')))
                 value_str = f"{value_decimal:.4f}"
                 value = value_str.split(".")
-                currency = {char_code: (name, tuple(value) ) }
+
+                if nominal == 1:
+                    currency = {char_code: (name, tuple(value) ) }
+                else:
+                    currency = {char_code: (name, tuple(value), nominal ) }
+
                 result.append(currency)
 
         return result
