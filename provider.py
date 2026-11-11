@@ -55,7 +55,7 @@ class CbrClient:
 
         current_time = time.time()
         time_passed = current_time - self._last_request_time
-        if time_passed < 1 and self.cache is not None:
+        if time_passed < self._delay and self.cache is not None:
             print("Повторный запрос отменён. Вывод данных с прошлого сохранения: ")
             return self.cache
 
@@ -67,6 +67,10 @@ class CbrClient:
 
         data = response.json()
         result = []
+
+        # будем вычислять НЕнайденные ID, оставлять на доске позора
+        shame_board = set(self.cur_lst)
+
         # vvvv Формат изначальных данных vvvv
         # 'Valute': {'AUD': {'AUD': {'ID': 'R01010', 'NumCode': '036', ...
         # ... 'CharCode': 'AUD', 'Nominal': 1, 'Name': 'Австралийский доллар',
@@ -75,6 +79,9 @@ class CbrClient:
         for char_code, info in valutes.items():
             valute_id = info.get('ID')
             if valute_id in self.cur_lst:
+                # нашли=вычеркнули из списка позорников
+                shame_board.discard(valute_id)
+
                 name = info.get('Name')
                 nominal = info.get('Nominal')
 
@@ -86,8 +93,11 @@ class CbrClient:
                     currency = {char_code: (name, tuple(value) ) }
                 else:
                     currency = {char_code: (name, tuple(value), nominal ) }
-
                 result.append(currency)
+
+        for _ in shame_board:
+            result.append({'R9999': None})
+
         self.cache = result
         self._last_request_time = current_time
         return result
