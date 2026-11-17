@@ -6,8 +6,22 @@ import time
 from visualiser import CurrenciesLst # Импортируем наш визуализатор
 
 
-class CbrClient:
+class SingletonMeta(type):
+    """Метакласс для реализации паттерна Одиночка."""
 
+    _instances = {}  # Наш созданный объект
+
+    def __call__(cls, *args, **kwargs):
+
+        # 1. Проверка наличие объекта этого класса в словаре _instances...
+        if cls not in cls._instances:
+            # 2. ...то создаем его
+            cls._instances[cls] = super().__call__(*args, **kwargs)
+
+        # 3. Если объект уже существует (или мы только что его создали), возвращаем его
+        return cls._instances[cls]
+
+class CbrClient(metaclass=SingletonMeta):
     def __init__(self, currencies_ids_lst: list[str], delay: float = 1.0 ):
         self.cur_lst = currencies_ids_lst
         self.cache = None
@@ -105,17 +119,16 @@ class CbrClient:
         return result
 
 if __name__ == '__main__':
+    
+    print("--- Проверка паттерна Одиночка ---")
+    client1 = CbrClient(['R01035'])
+    client2 = CbrClient(['R01335'])  # Пытаемся создать второй объект с другими данными
+    print(f"client1 is client2: {client1 is client2}")
+    print(f"Данные в client2: {client2.cur_lst}")  # Выведет ['R01035']
 
-    # print(client.get_currencies())
-    # print(client.get_currencies()) - повторный вывод будет отменён, слишком быстро
-
-
-    # 1. Получаем данные (фунты, тенге, лиры)
+    # Получаем данные основные (фунты, тенге, лиры)
     client = CbrClient(['R01035', 'R01335', 'R01700J'])
     data = client.get_currencies()
 
-    # 2. Передаем данные визуализатору
-    visualizer = CurrenciesLst(data)
-
-    # 3. Строим и сохраняем график
-    visualizer.visualize_currencies()
+    visualizer = CurrenciesLst(data)  # Передаем данные визуализатору
+    visualizer.visualize_currencies()  # Строим и сохраняем график
