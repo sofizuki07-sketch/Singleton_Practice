@@ -3,6 +3,8 @@ import requests
 from decimal import Decimal
 import time
 
+from visualiser import CurrenciesLst # Импортируем наш визуализатор
+
 
 class CbrClient:
 
@@ -103,7 +105,17 @@ class CbrClient:
         return result
 
 if __name__ == '__main__':
-    # фунты стерлингов, тенге, турецкие лиры
-    client = CbrClient(['R01035', 'R01335', 'R01700J'])
-    print(client.get_currencies())
+
+    # print(client.get_currencies())
     # print(client.get_currencies()) - повторный вывод будет отменён, слишком быстро
+
+
+    # 1. Получаем данные (фунты, тенге, лиры)
+    client = CbrClient(['R01035', 'R01335', 'R01700J'])
+    data = client.get_currencies()
+
+    # 2. Передаем данные визуализатору
+    visualizer = CurrenciesLst(data)
+
+    # 3. Строим и сохраняем график
+    visualizer.visualize_currencies()
